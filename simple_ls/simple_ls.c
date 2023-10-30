@@ -19,7 +19,7 @@ int main(int argc, char **argv)
     struct dirent *dir_info = readdir(dir_input);
     for (; dir_info; dir_info = readdir(dir_input))
     {
-        if (dir_info->d_type == 4 || dir_info->d_name[0] == '.')
+        if (dir_info->d_name[0] == '.')
             continue;
         printf("%s\n", dir_info->d_name);
     }
@@ -27,4 +27,3 @@ int main(int argc, char **argv)
     closedir(dir_input);
     return 0;
 }
-
