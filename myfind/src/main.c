@@ -42,7 +42,7 @@ int main(int argc, char **argv)
     struct args_input *args = process_args(argc, argv);
     fprintf(stderr, "===========\n");
     list_files_rec(args);
-    return 0;
+    return 9;
     struct tokens *tokens = parse_tokens(args);
     for (unsigned i = 0; i < tokens->length; i++)
         printf("%d - ", tokens->data[i]->type);
