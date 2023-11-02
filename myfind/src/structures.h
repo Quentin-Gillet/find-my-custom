@@ -1,6 +1,37 @@
 #ifndef MYFIND_STRUCTURES_H
 #define MYFIND_STRUCTURES_H
 
+#include <stdbool.h>
+
+struct file
+{
+    const char* filename;
+    const char* path;
+};
+
+enum token_type
+{
+    // OPERATOR
+    OPERATOR_AND,
+    OPERATOR_OR,
+    OPERATOR_NOT,
+    OPERATOR_L_PARENTHESIS,
+    OPERATOR_R_PARENTHESIS,
+
+    // ACTION
+    ACTION_DELETE,
+    ACTION_PRINT,
+    ACTION_EXEC,
+
+    // TEST
+    TEST_NAME,
+    TEST_TYPE,
+    TEST_NEWER,
+
+    // OTHER
+    VALUE,
+};
+
 struct exit_info
 {
     int exit_code;
@@ -8,21 +39,27 @@ struct exit_info
 
 struct args_input
 {
-    char* entry_point;
-    char** expression;
+    char *entry_point;
+    char **expression;
 
     unsigned expression_index;
 };
 
-enum function_list
+union token_value
 {
-    LIST_FILES_REC,
+    char *param;
+    char **args;
 };
 
-struct operation_function
+struct token
 {
-    enum function_list name;
-    void(*func)(struct args_input *args);
+    enum token_type type;
+    union token_value value;
+    bool (*func)(struct token *token, struct file file);
+
+    // Characteristics
+    bool reversed;
+    int precedence;
 };
 
 #endif // MYFIND_STRUCTURES_H

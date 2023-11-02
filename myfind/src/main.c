@@ -9,7 +9,6 @@ static struct args_input *process_args(int argc, char **argv)
     if (argc == 1)
     {
         args->entry_point = ".";
-        fprintf(stderr, "%s\n", args->entry_point);
         args->expression = NULL;
     }
     else
@@ -21,13 +20,9 @@ static struct args_input *process_args(int argc, char **argv)
             exit_with(1, "main.c:20 calloc allocation failed");
         int i = 2;
         for (; i < argc; i++)
-        {
             args->expression[i - 2] = argv[i];
-            fprintf(stderr, "%s\n", argv[i]);
-        }
         args->expression[i - 2] = NULL;
     }
-    args->expression_index = 0;
     return args;
 }
 
@@ -37,15 +32,45 @@ void free_args(struct args_input *args)
     free(args);
 }
 
+static int process_files(struct node *ast, struct args_input *args)
+{
+    DIR *current_dir = opendir(args->entry_point);
+    if (current_dir == NULL)
+        return 1;
+
+    struct dirent *dir_info = readdir(current_dir);
+    for (; dir_info; dir_info = readdir(current_dir))
+    {
+        if (strcmp(dir_info->d_name, "..") == 0
+            || strcmp(dir_info->d_name, ".") == 0)
+            continue;
+
+        char *path;
+        asprintf(&path, "%s/%s", args->entry_point, dir_info->d_name);
+        struct file file = { dir_info->d_name, path};
+        evaluate(ast, file);
+        if (dir_info->d_type == 4)
+        {
+            struct args_input *input = calloc(1, sizeof(struct args_input));
+            asprintf(&input->entry_point, "%s/%s", args->entry_point,
+                     dir_info->d_name);
+            process_files(ast, input);
+        }
+    }
+
+    closedir(current_dir);
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     struct args_input *args = process_args(argc, argv);
-    fprintf(stderr, "===========\n");
-    list_files_rec(args);
-    return 9;
     struct tokens *tokens = parse_tokens(args);
-    for (unsigned i = 0; i < tokens->length; i++)
-        printf("%d - ", tokens->data[i]->type);
+    struct node *ast = build_ast(tokens);
+
+    struct file file = { args->entry_point, args->entry_point };
+    evaluate(ast, file);
+    set_exit_code(process_files(ast, args));
 
     free_args(args);
     return get_exit_code();

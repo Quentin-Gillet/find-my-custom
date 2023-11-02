@@ -3,8 +3,9 @@
 
 #include <stdio.h>
 
-#include "operations/operations.h"
+#include "ast/ast.h"
 #include "errors/errors.h"
+#include "operations/operations.h"
 #include "structures.h"
 #include "token/tokens.h"
 

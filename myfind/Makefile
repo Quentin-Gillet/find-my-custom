@@ -1,17 +1,14 @@
 CC=gcc
 CPPFLAGS = -MMD
 CFLAGS=-std=c99 -pedantic -Werror -Wall -Wextra -Wvla
-LDFLAGS=
 
 SRC:=$(shell find src -type f -name "*.c")
-HEADER:=$(shell find src -type f -name "*.h")
-HEADER:=$(patsubst %.h,-I%.h,$(HEADER))
+
+HEADER:=$(patsubst %.h,-I%.h,$(shell find src -type f -name "*.h"))
 OBJ:=$(patsubst %.c,%.o,$(SRC))
 DEPS:=$(patsubst %.c,%.d,$(SRC))
-TARGET=myfind
 
-SRC_TESTS:=$(shell find tests -type f -name "*.c")
-OBJ_TESTS:=$(patsubst %.c,%.o,$(SRC_TESTS))
+TARGET=myfind
 
 all: CFLAGS += $(HEADER)
 all: $(TARGET)
@@ -19,14 +16,12 @@ all: $(TARGET)
 $(TARGET): $(OBJ)
 	$(CC) $(LDFLAGS) $^ -o $(TARGET)
 
-check: CFLAGS += -g $(shell pkg-config --cflags criterion)
-check: LDFLAGS += $(shell pkg-config --libs criterion)
-check: $(OBJ) $(OBJ_TESTS)
-	$(CC) $(LDFLAGS) $^ -o check
+check: all
+	@ dash ./tests/tests.sh
 
 .PHONY: clean
 
 -include $(DEPS)
 
 clean:
-	$(RM) $(OBJ) $(OBJ_TESTS) $(DEPS) $(TARGET) check
+	$(RM) $(OBJ) $(OBJ_TESTS) $(DEPS) $(TARGET)

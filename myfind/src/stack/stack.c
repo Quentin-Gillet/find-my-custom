@@ -1,20 +1,20 @@
 #include "stack.h"
 
-struct stack *stack_push(struct stack *s, struct token *token)
+struct stack *stack_push(struct stack *s, struct node *node)
 {
     if (s == NULL)
         s = stack_init();
 
-    if (s->token == NULL)
+    if (s->node == NULL)
     {
-        s->token = token;
+        s->node = node;
         return s;
     }
 
     struct stack *st = calloc(1, sizeof(struct stack));
 
     st->next = s;
-    st->token = token;
+    st->node = node;
 
     if (s == NULL)
         return st;
@@ -26,13 +26,13 @@ int is_empty(struct stack *s)
 {
     if (s == NULL)
         return 1;
-    return s->token == NULL ? 1 : 0;
+    return s->node == NULL ? 1 : 0;
 }
 
 struct stack *stack_init(void)
 {
     struct stack *stack = calloc(1, sizeof(struct stack));
-    stack->token = NULL;
+    stack->node = NULL;
     stack->next = NULL;
     return stack;
 }
@@ -46,9 +46,9 @@ struct stack *stack_pop(struct stack *s)
     return t;
 }
 
-struct token *stack_peek(struct stack *s)
+struct node *stack_peek(struct stack *s)
 {
     if (s == NULL)
         return NULL;
-    return s->token;
+    return s->node;
 }
