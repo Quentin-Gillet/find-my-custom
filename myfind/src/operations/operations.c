@@ -76,26 +76,30 @@ bool perm(struct token *token, struct file file)
         return token->reversed;
 
     char *file_perm;
-    asprintf(&file_perm, "%o",
+    asprintf(&file_perm, "%03o",
              stat_info->st_mode & (S_IRWXU | S_IRWXG | S_IRWXO));
 
-    //    if (token->value.param[0] == '-')
-    //    {
-    //        for (int i = 0; i < 3; i++)
-    //        {
-    //            int t = file_perm[i] & S_IWOTH;
-    //            int t2 = file_perm[i] & S_IROTH;
-    //            int t3 = file_perm[i] & S_IXOTH;
-    //            printf("%d %d %d\n", t, t2, t3);
-    //        }
-    //        return !token->reversed;
-    //    }
-    //    else
-    if (token->value.param[0] == '/' || token->value.param[0] == '+')
+    if (token->value.param[0] == '-')
     {
         for (int i = 0; i < 3; i++)
-            if (token->value.param[i + 1] >= file_perm[i])
+        {
+            if (token->value.param[i + 1] == '0')
+                continue;
+            if ((file_perm[i] & token->value.param[i + 1] - '0') == 0)
+                return token->reversed;
+        }
+        return !token->reversed;
+    }
+    else if (token->value.param[0] == '/' || token->value.param[0] == '+')
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            if (token->value.param[i + 1] == '0')
+                continue;
+            if ((file_perm[i] & token->value.param[i + 1] - '0') != 0)
                 return !token->reversed;
+        }
+        return token->reversed;
     }
     else
     {
