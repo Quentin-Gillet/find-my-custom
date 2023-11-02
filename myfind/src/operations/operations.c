@@ -85,7 +85,10 @@ bool perm(struct token *token, struct file file)
         {
             if (token->value.param[i + 1] == '0')
                 continue;
-            if ((file_perm[i] & token->value.param[i + 1] - '0') == 0)
+
+            int t = ((file_perm[i] - '0') & token->value.param[i + 1] - '0');
+            if (t == 0
+                || token->value.param[i + 1] - '0' > (file_perm[i] - '0'))
                 return token->reversed;
         }
         return !token->reversed;
