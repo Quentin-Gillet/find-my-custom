@@ -5,8 +5,8 @@
 
 struct file
 {
-    const char* filename;
-    const char* path;
+    char *filename;
+    char *path;
 };
 
 enum token_type
@@ -27,9 +27,9 @@ enum token_type
     TEST_NAME,
     TEST_TYPE,
     TEST_NEWER,
-
-    // OTHER
-    VALUE,
+    TEST_PERM,
+    TEST_USER,
+    TEST_GROUP,
 };
 
 struct exit_info
@@ -37,9 +37,17 @@ struct exit_info
     int exit_code;
 } exit_info;
 
+struct entries_point
+{
+    char **entries_point;
+    unsigned index;
+    int size;
+    int capacity;
+};
+
 struct args_input
 {
-    char *entry_point;
+    struct entries_point *entries_points;
     char **expression;
 
     unsigned expression_index;

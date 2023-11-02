@@ -51,6 +51,32 @@ static void process_operator(struct stack **operators_stack,
     *operands_stack = stack_push(*operands_stack, top_node);
 }
 
+static struct node *get_top_node(struct tokens *tokens,
+                                 struct stack **operands_stack)
+{
+    if (stack_peek(*operands_stack) == NULL)
+        return create_node(create_print_token());
+
+    bool exist = false;
+    for (unsigned i = 0; i < tokens->length; i++)
+        if (is_action(tokens->data[i]))
+            exist = true;
+
+    if (!exist)
+    {
+        struct node *and_node = create_node(create_and_token());
+
+        struct node *right = create_node(create_print_token());
+        struct node *left = stack_pop_value(operands_stack);
+
+        and_node->left = left;
+        and_node->right = right;
+
+        return and_node;
+    }
+    return stack_peek(*operands_stack);
+}
+
 struct node *build_ast(struct tokens *tokens)
 {
     struct stack *operators_stack = stack_init();
@@ -79,10 +105,7 @@ struct node *build_ast(struct tokens *tokens)
 
     while (stack_peek(operators_stack) != NULL)
         process_operator(&operators_stack, &operands_stack);
-    struct node *top_node = stack_peek(operands_stack);
-
-    if (top_node == NULL)
-        top_node = create_node(create_print_token());
+    struct node *top_node = get_top_node(tokens, &operands_stack);
 
     free(operands_stack);
     free(operators_stack);

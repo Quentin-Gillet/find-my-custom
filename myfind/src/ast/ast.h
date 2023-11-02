@@ -3,10 +3,11 @@
 
 #include <stdbool.h>
 
-#include "../token/tokens.h"
 #include "../stack/stack.h"
+#include "../token/tokens.h"
 
-struct node {
+struct node
+{
     struct token *token;
     struct node *left;
     struct node *right;

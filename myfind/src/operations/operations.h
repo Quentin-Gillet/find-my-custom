@@ -2,11 +2,13 @@
 #define MYFIND_OPERATIONS_H
 
 #include <dirent.h>
-#include <string.h>
-#include <stdbool.h>
 #include <fnmatch.h>
-#include <sys/types.h>
+#include <grp.h>
+#include <pwd.h>
+#include <stdbool.h>
+#include <string.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -15,7 +17,7 @@
 
 struct type_stat
 {
-    char* symbol;
+    char *symbol;
     int mode;
 };
 
@@ -26,5 +28,9 @@ bool exec(struct token *token, struct file file);
 // TOKENS TEST OPERATION
 bool name(struct token *token, struct file file);
 bool type(struct token *token, struct file file);
+bool newer(struct token *token, struct file file);
+bool perm(struct token *token, struct file file);
+bool group(struct token *token, struct file file);
+bool user(struct token *token, struct file file);
 
 #endif // MYFIND_OPERATIONS_H

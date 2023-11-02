@@ -6,55 +6,6 @@ bool print(struct token *token, struct file file)
     return token == NULL ? true : !token->reversed;
 }
 
-static bool exec_command(const char *command)
-{
-    pid_t child_pid;
-    int status;
-
-    child_pid = fork();
-
-    if (child_pid == -1)
-        return 1;
-
-    if (child_pid == 0)
-    {
-        execl("/bin/bash", "bash", "-c", command, NULL);
-        exit(1);
-    }
-    else
-    {
-        wait(&status);
-        if (WIFEXITED(status))
-            return false;
-        else
-            return true;
-    }
-}
-
-bool exec(struct token *token, struct file file)
-{
-    int count = sizeof(token->value.args) / sizeof(token->value.args[0]);
-    unsigned long totalLength = 0;
-    for (int i = 0; i < count; i++)
-        totalLength += strlen(token->value.args[i]) + 1;
-
-    char *command = (char *)malloc(totalLength * 100);
-    if (command == NULL)
-        return NULL;
-    command[0] = '\0';
-
-    for (int i = 0; i < count; i++)
-    {
-        if (strcmp(token->value.args[i], "{}") == 0)
-            strcat(command, file.filename);
-        else
-            strcat(command, token->value.args[i]);
-        if (i < count - 1)
-            strcat(command, " ");
-    }
-    return exec_command(command);
-}
-
 bool name(struct token *token, struct file file)
 {
     if (fnmatch(token->value.param, file.filename, 0) == 0)
@@ -65,7 +16,7 @@ bool name(struct token *token, struct file file)
 bool type(struct token *token, struct file file)
 {
     if (strlen(token->value.param) != 1)
-        return false;
+        return token->reversed;
 
     static struct type_stat mode_ref[] = { { "b", S_IFBLK }, { "d", S_IFDIR },
                                            { "c", S_IFCHR }, { "f", S_IFREG },
@@ -77,15 +28,118 @@ bool type(struct token *token, struct file file)
         if (strcmp(token->value.param, mode_ref[i].symbol) == 0)
             wanted_mode = mode_ref[i].mode;
     if (wanted_mode == -1)
-        return false;
+        return token->reversed;
 
     struct stat *stat_info = calloc(1, sizeof(struct stat));
     if (stat_info == NULL)
-        return false;
+        return token->reversed;
 
     int result_code = stat(file.path, stat_info);
     if (result_code == 0 && (stat_info->st_mode & S_IFMT) == wanted_mode)
-        return true;
+        return !token->reversed;
 
-    return false;
+    return token->reversed;
+}
+
+bool newer(struct token *token, struct file file)
+{
+    struct stat *stat_info = calloc(1, sizeof(struct stat));
+    if (stat_info == NULL)
+        return token->reversed;
+
+    int result_code = stat(file.path, stat_info);
+    if (result_code != 0)
+        return token->reversed;
+
+    struct stat *stat_info_param = calloc(1, sizeof(struct stat));
+    if (stat_info_param == NULL)
+        return token->reversed;
+
+    result_code = stat(token->value.param, stat_info_param);
+    if (result_code != 0)
+        return token->reversed;
+
+    int result =
+        stat_info->st_mtimespec.tv_sec > stat_info_param->st_mtimespec.tv_sec;
+    return token->reversed == !result;
+}
+
+bool perm(struct token *token, struct file file)
+{
+    // get permission for file
+    struct stat *stat_info = calloc(1, sizeof(struct stat));
+    if (stat_info == NULL)
+        return token->reversed;
+
+    // get stat of file
+    if (stat(file.path, stat_info) != 0)
+        return token->reversed;
+
+    char *file_perm;
+    asprintf(&file_perm, "%o",
+             stat_info->st_mode & (S_IRWXU | S_IRWXG | S_IRWXO));
+
+    //    if (token->value.param[0] == '-')
+    //    {
+    //        for (int i = 0; i < 3; i++)
+    //        {
+    //            int t = file_perm[i] & S_IWOTH;
+    //            int t2 = file_perm[i] & S_IROTH;
+    //            int t3 = file_perm[i] & S_IXOTH;
+    //            printf("%d %d %d\n", t, t2, t3);
+    //        }
+    //        return !token->reversed;
+    //    }
+    //    else
+    if (token->value.param[0] == '/' || token->value.param[0] == '+')
+    {
+        for (int i = 0; i < 3; i++)
+            if (token->value.param[i + 1] >= file_perm[i])
+                return !token->reversed;
+    }
+    else
+    {
+        if (strtol(token->value.param, NULL, 10) == strtol(file_perm, NULL, 10))
+            return !token->reversed;
+    }
+
+    return token->reversed;
+}
+
+bool user(struct token *token, struct file file)
+{
+    struct stat *stat_info = calloc(1, sizeof(struct stat));
+    if (stat_info == NULL)
+        return token->reversed;
+
+    if (stat(file.path, stat_info) != 0)
+        return token->reversed;
+
+    struct passwd *passwd_info = getpwuid(stat_info->st_uid);
+    if (passwd_info == NULL)
+        return token->reversed;
+
+    if (strcmp(passwd_info->pw_name, token->value.param) == 0)
+        return !token->reversed;
+
+    return token->reversed;
+}
+
+bool group(struct token *token, struct file file)
+{
+    struct stat *stat_info = calloc(1, sizeof(struct stat));
+    if (stat_info == NULL)
+        return token->reversed;
+
+    if (stat(file.path, stat_info) != 0)
+        return token->reversed;
+
+    struct group *group_info = getgrgid(stat_info->st_gid);
+    if (group_info == NULL)
+        return token->reversed;
+
+    if (strcmp(group_info->gr_name, token->value.param) == 0)
+        return !token->reversed;
+
+    return token->reversed;
 }

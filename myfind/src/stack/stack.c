@@ -46,9 +46,35 @@ struct stack *stack_pop(struct stack *s)
     return t;
 }
 
+struct stack *stack_pop_tail(struct stack *s)
+{
+    if (s == NULL)
+        return NULL;
+    if (s->next == NULL)
+    {
+        free(s);
+        return NULL;
+    }
+    struct stack *t = s;
+    while (t->next->next != NULL)
+        t = t->next;
+    free(t->next);
+    t->next = NULL;
+    return s;
+}
+
 struct node *stack_peek(struct stack *s)
 {
     if (s == NULL)
         return NULL;
+    return s->node;
+}
+
+struct node *stack_peek_tail(struct stack *s)
+{
+    if (s == NULL)
+        return NULL;
+    while (s->next != NULL)
+        s = s->next;
     return s->node;
 }
