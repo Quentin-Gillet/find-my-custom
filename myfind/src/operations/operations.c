@@ -30,7 +30,7 @@ bool type(struct token *token, struct file file)
         if (strcmp(token->value.param, mode_ref[i].symbol) == 0)
             wanted_mode = mode_ref[i].mode;
     if (wanted_mode == 999)
-        return token->reversed;
+        exit_with(1, "invalid argument for -type: %s", token->value.param);
 
     struct stat *stat_info = calloc(1, sizeof(struct stat));
     if (stat_info == NULL)

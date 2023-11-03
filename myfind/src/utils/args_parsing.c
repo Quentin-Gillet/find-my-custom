@@ -75,20 +75,20 @@ struct args_input *process_args(int argc, char **argv)
     if (args == NULL)
         exit_with(1, "main.c:67 calloc allocation failed");
 
+    int index = 1;
+
+    args->options = get_options(&index, argc, argv);
+    if (args->options == NULL)
+        exit_with(1, "main.c:81 invalid option '%s'", argv[index]);
+
     if (argc == 1)
     {
         args->expression = NULL;
-        args->options = NULL;
         args->entries_points = calloc(1, sizeof(struct entries_point));
         add_entry(args->entries_points, ".");
     }
     else
     {
-        int index = 1;
-
-        args->options = get_options(&index, argc, argv);
-        if (args->options == NULL)
-            exit_with(1, "main.c:81 invalid option '%s'", argv[index]);
         args->entries_points = get_entries_point(&index, argc, argv);
 
         args->expression = calloc(argc - 1, sizeof(char *));
@@ -100,5 +100,6 @@ struct args_input *process_args(int argc, char **argv)
             args->expression[i] = argv[index];
         args->expression[i] = NULL;
     }
+
     return args;
 }
