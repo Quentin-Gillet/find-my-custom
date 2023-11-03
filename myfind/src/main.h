@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 
+#include "args/args_parsing.h"
 #include "ast/ast.h"
 #include "errors/errors.h"
 #include "operations/operations.h"

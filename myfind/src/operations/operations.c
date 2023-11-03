@@ -34,7 +34,9 @@ bool type(struct token *token, struct file file)
     if (stat_info == NULL)
         return token->reversed;
 
-    int result_code = stat(file.path, stat_info);
+    int result_code = file.symlink == SYMLINK_FOLLOW
+        ? stat(file.path, stat_info)
+        : lstat(file.path, stat_info);
     if (result_code == 0 && (stat_info->st_mode & S_IFMT) == wanted_mode)
         return !token->reversed;
 
@@ -99,7 +101,7 @@ bool perm(struct token *token, struct file file)
         {
             if (token->value.param[i + 1] == '0')
                 continue;
-            if ((file_perm[i] & token->value.param[i + 1] - '0') != 0)
+            if (((file_perm[i] - '0') & token->value.param[i + 1] - '0') != 0)
                 return !token->reversed;
         }
         return token->reversed;

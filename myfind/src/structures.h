@@ -3,10 +3,18 @@
 
 #include <stdbool.h>
 
+enum symlink
+{
+    SYMLINK_FOLLOW,
+    SYMLINK_NOFOLLOW,
+    SYMLINK_FOLLOW_EXEC,
+};
+
 struct file
 {
     char *filename;
     char *path;
+    enum symlink symlink;
 };
 
 enum token_type
@@ -45,9 +53,16 @@ struct entries_point
     int capacity;
 };
 
+struct options
+{
+    enum symlink symlink;
+    bool post_order;
+};
+
 struct args_input
 {
     struct entries_point *entries_points;
+    struct options *options;
     char **expression;
 
     unsigned expression_index;
