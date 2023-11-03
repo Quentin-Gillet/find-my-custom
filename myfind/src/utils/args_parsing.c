@@ -18,6 +18,12 @@ static void add_entry(struct entries_point *entries_point, char *entry)
     entries_point->size++;
 }
 
+static bool end_of_entries_point(int index, int argc, char **argv)
+{
+    return index >= argc || argv[index][0] == '-' || argv[index][0] == '('
+        || argv[index][0] == '!';
+}
+
 static struct entries_point *get_entries_point(int *index, int argc,
                                                char **argv)
 {
@@ -26,14 +32,12 @@ static struct entries_point *get_entries_point(int *index, int argc,
     if (entries_point == NULL)
         exit_with(1, "main.c:26 calloc allocation failed");
 
-    while (argc > *index)
-        if (get_token_model(argv[*index]) == NULL)
-        {
-            add_entry(entries_point, argv[*index]);
-            *index = *index + 1;
-        }
-        else
-            break;
+    while (!end_of_entries_point(*index, argc, argv))
+    {
+        add_entry(entries_point, argv[*index]);
+        *index = *index + 1;
+    }
+
     if (entries_point->size == 0)
         add_entry(entries_point, ".");
     return entries_point;
@@ -83,6 +87,8 @@ struct args_input *process_args(int argc, char **argv)
         int index = 1;
 
         args->options = get_options(&index, argc, argv);
+        if (args->options == NULL)
+            exit_with(1, "main.c:81 invalid option '%s'", argv[index]);
         args->entries_points = get_entries_point(&index, argc, argv);
 
         args->expression = calloc(argc - 1, sizeof(char *));

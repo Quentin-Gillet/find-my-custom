@@ -1,19 +1,20 @@
 #ifndef MYFIND_OPERATIONS_H
 #define MYFIND_OPERATIONS_H
 
+#include <ctype.h>
 #include <dirent.h>
+#include <errors.h>
+#include <fcntl.h>
 #include <fnmatch.h>
 #include <grp.h>
 #include <pwd.h>
 #include <stdbool.h>
 #include <string.h>
+#include <structures.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
-
-#include "../errors/errors.h"
-#include "../structures.h"
 
 struct type_stat
 {

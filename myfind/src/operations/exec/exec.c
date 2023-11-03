@@ -1,4 +1,4 @@
-#include "../operations.h"
+#include <operations.h>
 
 static bool exec_command(char *command, char **args)
 {
@@ -40,8 +40,9 @@ bool exec(struct token *token, struct file file)
     for (int i = 0; token->value.args[i]; i++)
         if (strcmp(token->value.args[i], "{}") == 0)
         {
-            char *input;
-            asprintf(&input, "%s", file.path);
+            unsigned long len = strlen(file.path) + 1;
+            char *input = calloc(len, sizeof(char));
+            snprintf(input, len, "%s", file.path);
             command_args[i] = input;
         }
         else

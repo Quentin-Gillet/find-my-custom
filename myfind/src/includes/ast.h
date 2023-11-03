@@ -1,10 +1,9 @@
 #ifndef MYFIND_AST_H
 #define MYFIND_AST_H
 
+#include <stack.h>
 #include <stdbool.h>
-
-#include "../stack/stack.h"
-#include "../token/tokens.h"
+#include <tokens.h>
 
 struct node
 {

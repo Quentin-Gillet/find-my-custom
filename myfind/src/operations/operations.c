@@ -1,4 +1,6 @@
-#include "operations.h"
+#define _DEFAULT_SOURCE 1
+
+#include <operations.h>
 
 bool print(struct token *token, struct file file)
 {
@@ -23,11 +25,11 @@ bool type(struct token *token, struct file file)
                                            { "l", S_IFLNK }, { "p", S_IFIFO },
                                            { "g", S_IFSOCK } };
 
-    int wanted_mode = -1;
+    unsigned int wanted_mode = 999;
     for (int i = 0; i < 7; i++)
         if (strcmp(token->value.param, mode_ref[i].symbol) == 0)
             wanted_mode = mode_ref[i].mode;
-    if (wanted_mode == -1)
+    if (wanted_mode == 999)
         return token->reversed;
 
     struct stat *stat_info = calloc(1, sizeof(struct stat));
@@ -61,8 +63,7 @@ bool newer(struct token *token, struct file file)
     if (result_code != 0)
         return token->reversed;
 
-    int result =
-        stat_info->st_mtimespec.tv_sec > stat_info_param->st_mtimespec.tv_sec;
+    int result = stat_info->st_mtime > stat_info_param->st_mtime;
     return token->reversed == !result;
 }
 
@@ -77,9 +78,9 @@ bool perm(struct token *token, struct file file)
     if (stat(file.path, stat_info) != 0)
         return token->reversed;
 
-    char *file_perm;
-    asprintf(&file_perm, "%03o",
-             stat_info->st_mode & (S_IRWXU | S_IRWXG | S_IRWXO));
+    char *file_perm = calloc(10, sizeof(char));
+    int mode = stat_info->st_mode & (S_IRWXU | S_IRWXG | S_IRWXO);
+    snprintf(file_perm, 10, "%03o", mode);
 
     if (token->value.param[0] == '-')
     {
@@ -88,9 +89,9 @@ bool perm(struct token *token, struct file file)
             if (token->value.param[i + 1] == '0')
                 continue;
 
-            int t = ((file_perm[i] - '0') & token->value.param[i + 1] - '0');
+            int t = ((file_perm[i] - '0') & (token->value.param[i + 1] - '0'));
             if (t == 0
-                || token->value.param[i + 1] - '0' > (file_perm[i] - '0'))
+                || (token->value.param[i + 1] - '0') > (file_perm[i] - '0'))
                 return token->reversed;
         }
         return !token->reversed;
@@ -101,18 +102,24 @@ bool perm(struct token *token, struct file file)
         {
             if (token->value.param[i + 1] == '0')
                 continue;
-            if (((file_perm[i] - '0') & token->value.param[i + 1] - '0') != 0)
+            if (((file_perm[i] - '0') & (token->value.param[i + 1] - '0')) != 0)
                 return !token->reversed;
         }
         return token->reversed;
     }
-    else
-    {
-        if (strtol(token->value.param, NULL, 10) == strtol(file_perm, NULL, 10))
-            return !token->reversed;
-    }
+    else if (strtol(token->value.param, NULL, 10)
+             == strtol(file_perm, NULL, 10))
+        return !token->reversed;
 
     return token->reversed;
+}
+
+static bool is_number(const char *str)
+{
+    for (unsigned i = 0; i < strlen(str); i++)
+        if (!isdigit(str[i]))
+            return false;
+    return true;
 }
 
 bool user(struct token *token, struct file file)
@@ -124,12 +131,22 @@ bool user(struct token *token, struct file file)
     if (stat(file.path, stat_info) != 0)
         return token->reversed;
 
+    if ((is_number(token->value.param)
+         && strtol(token->value.param, NULL, 10) == stat_info->st_gid))
+        return !token->reversed;
+
     struct passwd *passwd_info = getpwuid(stat_info->st_uid);
     if (passwd_info == NULL)
-        return token->reversed;
+        exit_with(1, "no such user: %s", token->value.param);
 
-    if (strcmp(passwd_info->pw_name, token->value.param) == 0)
+    if (strcmp(passwd_info->pw_name, token->value.param) == 0
+        || passwd_info->pw_uid == strtol(token->value.param, NULL, 10))
         return !token->reversed;
+
+    if (getpwnam(token->value.param) == NULL
+        && (!is_number(token->value.param)
+            || getpwuid(strtol(token->value.param, NULL, 10)) == NULL))
+        exit_with(1, "no such user: %s", token->value.param);
 
     return token->reversed;
 }
@@ -143,12 +160,23 @@ bool group(struct token *token, struct file file)
     if (stat(file.path, stat_info) != 0)
         return token->reversed;
 
+    if ((is_number(token->value.param)
+         && strtol(token->value.param, NULL, 10) == stat_info->st_gid))
+        return !token->reversed;
+
     struct group *group_info = getgrgid(stat_info->st_gid);
     if (group_info == NULL)
-        return token->reversed;
+        exit_with(1, "no such group: %s", token->value.param);
 
-    if (strcmp(group_info->gr_name, token->value.param) == 0)
+    if (strcmp(group_info->gr_name, token->value.param) == 0
+        || (is_number(token->value.param)
+            && group_info->gr_gid == strtol(token->value.param, NULL, 10)))
         return !token->reversed;
+
+    if (getgrnam(token->value.param) == NULL
+        && (!is_number(token->value.param)
+            || getgrgid(strtol(token->value.param, NULL, 10)) == NULL))
+        exit_with(1, "no such group: %s", token->value.param);
 
     return token->reversed;
 }

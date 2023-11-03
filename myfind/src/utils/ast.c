@@ -1,4 +1,4 @@
-#include "ast.h"
+#include <ast.h>
 
 static struct node *create_node(struct token *token)
 {
@@ -44,7 +44,7 @@ static void process_operator(struct stack **operators_stack,
     struct node *left = stack_pop_value(operands_stack);
 
     if (left == NULL || right == NULL)
-        exit_with(1, "ast.c:29 wrong input format");
+        exit_with(1, "ast.c:47 wrong input format");
 
     top_node->left = left;
     top_node->right = right;
@@ -77,6 +77,23 @@ static struct node *get_top_node(struct tokens *tokens,
     return stack_peek(*operands_stack);
 }
 
+struct node *check_top_operator(struct stack *operators_stack)
+{
+    if (stack_peek(operators_stack) == NULL)
+        exit_with(1, "missing '(' in input");
+    return stack_peek(operators_stack);
+}
+
+void process_end_of_ast(struct stack **operators_stack,
+                        struct stack **operands_stack)
+{
+    while (stack_peek(*operators_stack) != NULL)
+        if (stack_peek(*operators_stack)->token->type == L_PARENT)
+            exit_with(1, "too many ')' in input");
+        else
+            process_operator(operators_stack, operands_stack);
+}
+
 struct node *build_ast(struct tokens *tokens)
 {
     struct stack *operators_stack = stack_init();
@@ -85,11 +102,29 @@ struct node *build_ast(struct tokens *tokens)
     for (unsigned i = 0; tokens != NULL && i < tokens->length; i++)
     {
         struct token *token = tokens->data[i];
-        if (!is_operator(token))
+
+        if (token->type == L_PARENT)
+            operators_stack = stack_push(operators_stack, create_node(token));
+        else if (token->type == R_PARENT)
+        {
+            struct node *top_node;
+            while ((top_node = check_top_operator(operators_stack)) != NULL
+                   && top_node->token->type != L_PARENT)
+                process_operator(&operators_stack, &operands_stack);
+
+            if (top_node != NULL && top_node->token->reversed)
+                stack_peek(operands_stack)->token->reversed = true;
+
+            if (stack_peek(operators_stack)->token->type != L_PARENT)
+                exit_with(1, "111: missing ')' in input");
+
+            operators_stack = stack_pop(operators_stack);
+        }
+        else if (!is_operator(token))
         {
             operands_stack = stack_push(operands_stack, create_node(token));
-            if (tokens->data[i + 1] != NULL
-                && !is_operator(tokens->data[i + 1]))
+            if (tokens->data[i + 1] != NULL && !is_operator(tokens->data[i + 1])
+                && !is_parenthesis(tokens->data[i + 1]))
                 operators_stack = stack_push(operators_stack,
                                              create_node(create_and_token()));
         }
@@ -103,21 +138,26 @@ struct node *build_ast(struct tokens *tokens)
         }
     }
 
-    while (stack_peek(operators_stack) != NULL)
-        process_operator(&operators_stack, &operands_stack);
-    struct node *top_node = get_top_node(tokens, &operands_stack);
+    process_end_of_ast(&operators_stack, &operands_stack);
+    return get_top_node(tokens, &operands_stack);
+}
 
-    free(operands_stack);
-    free(operators_stack);
-    return top_node;
+static bool revert_bool(bool original, bool reversed)
+{
+    return reversed == !original;
 }
 
 bool evaluate(struct node *tree, struct file file)
 {
-    if (tree->token->type == OPERATOR_OR)
-        return evaluate(tree->left, file) || evaluate(tree->right, file);
-    else if (tree->token->type == OPERATOR_AND)
-        return evaluate(tree->left, file) && evaluate(tree->right, file);
+    struct token *token = tree->token;
+    if (token->type == OPERATOR_OR)
+        return revert_bool(evaluate(tree->left, file)
+                               || evaluate(tree->right, file),
+                           token->reversed);
+    else if (token->type == OPERATOR_AND)
+        return revert_bool(evaluate(tree->left, file)
+                               && evaluate(tree->right, file),
+                           token->reversed);
     else
-        return tree->token->func(tree->token, file);
+        return token->func(token, file);
 }

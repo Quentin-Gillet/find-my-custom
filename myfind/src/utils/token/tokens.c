@@ -41,6 +41,9 @@ static void add_token(struct token *token, struct tokens *tokens)
 
 static void set_simple_value(struct token *token, struct args_input *args)
 {
+    if (args->expression[args->expression_index] == NULL)
+        exit_with(1, "token.c:45 missing argument for %s",
+                  args->expression[args->expression_index - 1]);
     token->value.param = args->expression[args->expression_index];
 }
 
@@ -52,9 +55,9 @@ struct token_model *get_token_model(const char *symbol)
     static struct token_model models[] = {
         { "-o", OPERATOR_OR, 1, NULL, NULL },
         { "-a", OPERATOR_AND, 2, NULL, NULL },
-        { "'!'", OPERATOR_NOT, 0, NULL, NULL },
-        { "'('", OPERATOR_L_PARENTHESIS, 0, NULL, NULL },
-        { "')'", OPERATOR_R_PARENTHESIS, 0, NULL, NULL },
+        { "!", OPERATOR_NOT, 0, NULL, NULL },
+        { "(", L_PARENT, 0, NULL, NULL },
+        { ")", R_PARENT, 0, NULL, NULL },
 
         { "-delete", ACTION_DELETE, 0, NULL, NULL },
         { "-print", ACTION_PRINT, 0, NULL, print },
@@ -82,7 +85,7 @@ static struct token *get_token_from_symbol(const char *symbol,
     struct token_model *model = get_token_model(symbol);
     struct token *token = calloc(1, sizeof(struct token));
 
-    if (token == NULL)
+    if (token == NULL || model == NULL)
         return NULL;
 
     token->type = model->type;
@@ -111,6 +114,11 @@ bool is_action(struct token *token)
         || token->type == ACTION_DELETE;
 }
 
+bool is_parenthesis(struct token *token)
+{
+    return token->type == L_PARENT || token->type == R_PARENT;
+}
+
 struct tokens *parse_tokens(struct args_input *args)
 {
     if (args->expression == NULL)
@@ -118,12 +126,23 @@ struct tokens *parse_tokens(struct args_input *args)
 
     struct tokens *tokens = calloc(1, sizeof(struct tokens));
     if (tokens == NULL)
-        exit_with(1, "token.c:109 calloc error");
+        exit_with(1, "token.c:129 calloc error");
 
     for (; args->expression[args->expression_index]; args->expression_index++)
     {
         struct token *token = get_token_from_symbol(
             args->expression[args->expression_index], args);
+
+        if (token == NULL)
+            exit_with(1, "unknown token %s",
+                      args->expression[args->expression_index]);
+
+        if (tokens->length != 0 && tokens->data[tokens->length - 1] != NULL
+            && tokens->data[tokens->length - 1]->type == OPERATOR_NOT)
+        {
+            token->reversed = true;
+            tokens->length--;
+        }
 
         add_token(token, tokens);
     }

@@ -9,20 +9,20 @@ CLEAR='\033[0m'
 ITALIC='\033[4m'
 
 test_find(){
-    got=$(.././myfind $*)
+    got=$(.././myfind $* 2>/dev/null)
     exit_code="$?"
-    expected=$(find $*)
+    expected=$(find $* 2>/dev/null)
     expected_exit_code="$?"
     if [ "$got" = "$expected" ] && [ "$exit_code" -eq "$expected_exit_code" ]; then
         pass=$(( $pass + 1))
     elif [ "$got" != "$expected" ]; then
         echo "-------------------------------"
-        echo -e "${CLEAR}Test '$*' ${RED}failed! ${RED}Got: ${got}, ${GREEN}Expected: ${expected}${CLEAR}"
+        echo "${CLEAR}Test '$*' ${RED}failed! ${RED}Got: ${got}, ${GREEN}Expected: ${expected}${CLEAR}"
         failed=$(( $failed + 1))
         echo "-------------------------------"
     else
         echo "-------------------------------"
-        echo -e "${RED}Wrong exit code on '$*'! ${CLEAR}Got: ${exit_code}, Expected: $expected_exit_code"
+        echo "${RED}Wrong exit code on '$*'! ${CLEAR}Got: ${exit_code}, Expected: $expected_exit_code"
         failed=$(( $failed + 1))
         echo "-------------------------------"
     fi
@@ -51,35 +51,87 @@ test_find testing/foo/* -newer testing/foo/bar
 test_find testing/foo/* -newer testing/foo/baz
 test_find ../. -name "*.c" -print -o -type d -print
 test_find ../. -name "*.c" -o -type d -print
+test_find . test? \! -name "foo*" -print
+test_find . . -print
+test_find . te* src/ -print -o -type d -print
+test_find . te* src/ -print -o \! -type d -print
+test_find tests.sh . -print
+test_find tests.sh -print
 
 # TEST -PERM
 test_find testing/perm -perm 777
 test_find testing/perm -perm -102
-test_find testing/perm -perm +004
-test_find testing/perm -perm +120
-test_find testing/perm -perm +004
+test_find testing/perm -perm /004
+test_find testing/perm -perm /120
+test_find testing/perm -perm /004
 test_find testing/perm -perm -567
 
 # TEST -USER
 test_find testing/perm -user quentin
 test_find testing/perm -user 0
+test_find testing/perm -user test
 
 # TEST -GROUP
 test_find testing/perm -group staff
 test_find testing/perm -group 0
+test_find testing/perm -group test
 
 # TEST -d options
 # TODO FIX test_find testing/perm -d .
-test_find -d ../
-test_find -d ../ -name "*.*" -print
 
 # TEST -L options
 test_find -L testing/symlink -print
 test_find -L testing/symlink -print -o -type d -print
+test_find -L testing/symlink/bin -print -o -type d -print
 test_find -L . -type d
 
 # TEST -P options
 test_find -P testing/symlink -print
 test_find -P testing/symlink -print -o -type d -print
 
-echo -e "${ITALIC}Total tests:${CLEAR} $(( $pass + $failed )), ${GREEN}Pass: ${pass}${CLEAR}, ${RED}Failed: ${failed}${CLEAR}."
+# TEST -H options
+test_find -H testing/symlink -print
+test_find -H testing/symlink -print -o -type d -print
+test_find -H testing -print -o -type d -print
+test_find -H testing -print
+
+# TEST ! operator
+test_find testing -name "foo*" ! -name "foo"
+test_find testing -name "foo*" ! -name "foo*" -print
+test_find testing -name "foo*" ! -name "foo*" -print -o -type d -print
+test_find testing -name "foo*" ! -name "foo*" -print -o -type d -print -o -name "foo*" -print
+test_find testing -name "foo*" ! -name "foo*" -print -o -type d -print -o -name "foo*" -print -o -name "foo*" -print
+test_find testing -name "foo*" ! -name "foo*" -print -o -type d -print -o -name "foo*" -print -o -name "foo*" -print -o -name "foo*" -print
+test_find . '!' -name "bar"
+test_find . '!' -name "bar"
+
+# TEST () operator
+test_find . \( -name bar -o -name baz \)
+test_find . \( -name bar \)
+test_find . \! \( -name bar -o -name baz \)
+
+# TEST errors
+test_find mdr -print
+test_find . -name
+test_find . -name \; testing
+test_find . -name testing
+test_find . mdr -name testing
+test_find -d . -name
+test_find testing -name "foo*" -print -o -t
+test_find testing \( -name "foo*" -print
+test_find testing \( -name "foo*" -print
+test_find testing \) -name "foo*" -print
+test_find testing -name "foo*" -print \)
+test_find testing \( -name "foo*" -print \) \)
+test_find . \! -name "foo*" -print
+test_find . \! -name "foo*" -print \)
+test_find . src \! -name "foo*" -print \)
+test_find . mdr lol \! -name "foo*" -print
+test_find . tests lol \! -name "foo*" -print
+test_find Makefile -print
+
+percent_color=$GREEN
+if [ $failed -gt $pass ]; then
+    percent_color=$RED
+fi
+echo "${ITALIC}Total tests: $(( $pass + $failed )),${CLEAR} ${GREEN}Pass: ${pass},${CLEAR} ${RED}Failed: ${failed}.${CLEAR} ${percent_color}Percent success: $(( $pass * 100 / ($pass + $failed) ))%${CLEAR}"

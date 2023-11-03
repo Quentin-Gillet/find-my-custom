@@ -1,13 +1,12 @@
 #ifndef MYFIND_TOKENS_H
 #define MYFIND_TOKENS_H
 
+#include <errors.h>
+#include <operations.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "../errors/errors.h"
-#include "../operations/operations.h"
-#include "../structures.h"
+#include <structures.h>
 
 struct token_model
 {
@@ -28,6 +27,7 @@ struct tokens
 
 bool is_operator(struct token *token);
 bool is_action(struct token *token);
+bool is_parenthesis(struct token *token);
 
 struct tokens *parse_tokens(struct args_input *args);
 struct token_model *get_token_model(const char *symbol);
