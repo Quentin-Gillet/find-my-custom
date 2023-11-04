@@ -6,7 +6,8 @@ static bool is_terminator(const char *str)
         || strcmp(str, "\\;") == 0;
 }
 
-static void set_exec_value(struct token *token, struct args_input *args)
+static void set_exec_value(struct token *token, struct args_input *args,
+                           __attribute__((unused)) struct tokens *tokens)
 {
     args->expression_index++;
     unsigned start_index = args->expression_index;
@@ -44,7 +45,8 @@ static void add_token(struct token *token, struct tokens *tokens)
         tokens->length++;
 }
 
-static void set_simple_value(struct token *token, struct args_input *args)
+static void set_simple_value(struct token *token, struct args_input *args,
+                             __attribute__((unused)) struct tokens *tokens)
 {
     args->expression_index++;
     if (args->expression[args->expression_index] == NULL)
@@ -54,7 +56,8 @@ static void set_simple_value(struct token *token, struct args_input *args)
 }
 
 static void set_delete(__attribute__((unused)) struct token *token,
-                       struct args_input *args)
+                       struct args_input *args,
+                       __attribute__((unused)) struct tokens *tokens)
 {
     args->options->post_order = true;
 }
@@ -98,14 +101,26 @@ struct token *copy_token(struct token *token)
     return new_token;
 }
 
+void token_before(__attribute__((unused)) struct token *token,
+                  __attribute__((unused)) struct args_input *args,
+                  struct tokens *tokens)
+{
+    if (tokens->length == 0)
+        exit_with(1, "need to have a token before -o");
+    if (tokens->data[tokens->length - 1]->type == OPERATOR_OR
+        || tokens->data[tokens->length - 1]->type == OPERATOR_AND
+        || tokens->data[tokens->length - 1]->type == OPERATOR_NOT)
+        exit_with(1, "need to have a token before -o");
+}
+
 struct token_model *get_token_model(const char *symbol)
 {
     if (symbol == NULL || strcmp(symbol, "") == 0)
         return NULL;
 
     static struct token_model models[] = {
-        { "-o", OPERATOR_OR, 1, NULL, NULL },
-        { "-a", OPERATOR_AND, 2, NULL, NULL },
+        { "-o", OPERATOR_OR, 1, token_before, NULL },
+        { "-a", OPERATOR_AND, 2, token_before, NULL },
         { "!", OPERATOR_NOT, 0, NULL, NULL },
         { "(", L_PARENT, 0, NULL, NULL },
         { ")", R_PARENT, 0, NULL, NULL },
@@ -132,7 +147,8 @@ struct token_model *get_token_model(const char *symbol)
 }
 
 static struct token *get_token_from_symbol(const char *symbol,
-                                           struct args_input *args)
+                                           struct args_input *args,
+                                           struct tokens *tokens)
 {
     struct token_model *model = get_token_model(symbol);
     struct token *token = calloc(1, sizeof(struct token));
@@ -144,7 +160,7 @@ static struct token *get_token_from_symbol(const char *symbol,
     token->pre = model->precedence;
 
     if (model->set_value != NULL)
-        model->set_value(token, args);
+        model->set_value(token, args, tokens);
 
     token->reversed = false;
     token->func = model->func;
@@ -180,7 +196,7 @@ struct tokens *parse_tokens(struct args_input *args)
     for (; args->expression[args->expression_index]; args->expression_index++)
     {
         struct token *token = get_token_from_symbol(
-            args->expression[args->expression_index], args);
+            args->expression[args->expression_index], args, tokens);
 
         if (token == NULL)
             exit_with(1, "unknown token %s",

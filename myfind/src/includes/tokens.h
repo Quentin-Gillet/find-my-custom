@@ -14,7 +14,8 @@ struct token_model
     enum token_type type;
     int precedence;
 
-    void (*set_value)(struct token *token, struct args_input *args);
+    void (*set_value)(struct token *token, struct args_input *args,
+                      struct tokens *tokens);
     bool (*func)(struct token *token, struct file file);
 };
 
