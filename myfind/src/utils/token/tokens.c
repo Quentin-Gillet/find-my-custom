@@ -62,7 +62,7 @@ struct token *copy_token(struct token *token)
     new_token->reversed = token->reversed;
     new_token->func = token->func;
 
-    if (token->type == ACTION_EXEC)
+    if (token->type == ACTION_EXEC || token->type == ACTION_EXECDIR)
     {
         int len = 0;
         for (; token->value.args[len]; len++)
@@ -105,6 +105,7 @@ struct token_model *get_token_model(const char *symbol)
         { "-delete", ACTION_DELETE, 0, NULL, NULL },
         { "-print", ACTION_PRINT, 0, NULL, print },
         { "-exec", ACTION_EXEC, -1, set_exec_value, exec },
+        { "-execdir", ACTION_EXECDIR, -1, set_exec_value, execdir },
 
         { "-name", TEST_NAME, 1, set_simple_value, name },
         { "-type", TEST_TYPE, 1, set_simple_value, type },
@@ -154,7 +155,7 @@ bool is_operator(struct token *token)
 bool is_action(struct token *token)
 {
     return token->type == ACTION_PRINT || token->type == ACTION_EXEC
-        || token->type == ACTION_DELETE;
+        || token->type == ACTION_DELETE || token->type == ACTION_EXECDIR;
 }
 
 bool is_parenthesis(struct token *token)
@@ -169,7 +170,7 @@ struct tokens *parse_tokens(struct args_input *args)
 
     struct tokens *tokens = calloc(1, sizeof(struct tokens));
     if (tokens == NULL)
-        exit_with(1, "token.c:129 calloc error");
+        exit_with(1, "token.c:173 calloc error");
 
     for (; args->expression[args->expression_index]; args->expression_index++)
     {

@@ -1,5 +1,3 @@
-#define _DEFAULT_SOURCE 1
-
 #include <main.h>
 
 static void process_entry_point(struct node *ast, const char *path,
@@ -22,7 +20,8 @@ static void process_entry_point(struct node *ast, const char *path,
             snprintf(filepath, size, "%s%s", path, dir_info->d_name);
         else
             snprintf(filepath, size, "%s/%s", path, dir_info->d_name);
-        struct file file = { dir_info->d_name, filepath, options->symlink };
+        struct file file = { dir_info->d_name, filepath, path,
+                             options->symlink };
 
         struct stat statbuf;
         if (lstat(filepath, &statbuf) == -1)
@@ -51,8 +50,11 @@ static int process_entries_points(struct node *ast,
 {
     for (int i = 0; i < entries_point->size; i++)
     {
-        struct file file = { entries_point->entries_point[i],
-                             entries_point->entries_point[i],
+        char *parent =
+            calloc(strlen(entries_point->entries_point[i]) + 1, sizeof(char));
+        strcpy(parent, entries_point->entries_point[i]);
+        struct file file = { basename(entries_point->entries_point[i]),
+                             entries_point->entries_point[i], dirname(parent),
                              options->symlink };
 
         struct stat statbuf;
@@ -69,6 +71,8 @@ static int process_entries_points(struct node *ast,
 
         if (options->post_order)
             evaluate(ast, file);
+
+        free(parent);
     }
     return 0;
 }
@@ -88,7 +92,7 @@ static void free_token(struct token *token, bool free_args)
 {
     if (token == NULL)
         return;
-    if (token->type == ACTION_EXEC)
+    if (token->type == ACTION_EXEC || token->type == ACTION_EXECDIR)
     {
         for (int i = 0; token->value.args[i] != NULL; i++)
             free(token->value.args[i]);

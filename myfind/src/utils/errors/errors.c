@@ -4,7 +4,7 @@ void exit_with(int code, char *message, ...)
 {
     char *buffer = calloc(strlen(message) + 10, sizeof(char));
     if (buffer == NULL)
-        exit_with(1, "exit_with: calloc error");
+        exit(1);
 
     snprintf(buffer, strlen(message) + 10, "myfind: %s\n", message);
 

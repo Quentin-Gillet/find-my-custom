@@ -14,6 +14,7 @@ struct file
 {
     char *filename;
     char *path;
+    const char *parent;
     enum symlink symlink;
 };
 
@@ -30,6 +31,7 @@ enum token_type
     ACTION_DELETE,
     ACTION_PRINT,
     ACTION_EXEC,
+    ACTION_EXECDIR,
 
     // TEST
     TEST_NAME,

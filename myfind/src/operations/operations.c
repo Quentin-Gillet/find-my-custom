@@ -1,10 +1,3 @@
-#define _DEFAULT_SOURCE 1
-#if defined(__APPLE__)
-#    define st_atim st_atimespec
-#    define st_ctim st_ctimespec
-#    define st_mtim st_mtimespec
-#endif
-
 #include <operations.h>
 
 bool print(struct token *token, struct file file)
@@ -51,17 +44,31 @@ bool type(struct token *token, struct file file)
 bool newer(struct token *token, struct file file)
 {
     struct stat stat_info;
-    int result_code = stat(file.path, &stat_info);
+    int result_code = lstat(file.path, &stat_info);
     if (result_code != 0)
         return token->reversed;
 
     struct stat stat_info_param;
-    result_code = stat(token->value.param, &stat_info_param);
+    result_code = lstat(token->value.param, &stat_info_param);
     if (result_code != 0)
-        return token->reversed;
+        exit_with(1, "no such file or directory: %s", token->value.param);
 
     int result = stat_info.st_mtim.tv_nsec > stat_info_param.st_mtim.tv_nsec;
     return token->reversed == !result;
+}
+
+static void check_perm(char *perm)
+{
+    if (strlen(perm) < 3 || (strlen(perm) > 4))
+        exit_with(1, "invalid argument for -perm: %s", perm);
+
+    if (strlen(perm) > 4 && perm[0] != '/' && perm[0] != '-')
+        exit_with(1, "invalid argument for -perm: %s", perm);
+
+    int inc = strlen(perm) == 4 ? 1 : 0;
+    for (int i = 0; i < 3; i++)
+        if (perm[i + inc] < '0' || perm[i + inc] > '7')
+            exit_with(1, "invalid argument for -perm: %s", perm);
 }
 
 bool perm(struct token *token, struct file file)
@@ -73,6 +80,8 @@ bool perm(struct token *token, struct file file)
     char *file_perm = calloc(10, sizeof(char));
     int mode = stat_info.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO);
     snprintf(file_perm, 10, "%03o", mode);
+
+    check_perm(token->value.param);
 
     if (token->value.param[0] == '-')
     {
@@ -88,12 +97,13 @@ bool perm(struct token *token, struct file file)
         }
         return !token->reversed;
     }
-    else if (token->value.param[0] == '/' || token->value.param[0] == '+')
+    else if (token->value.param[0] == '/')
     {
+        if (strcmp(token->value.param, "/000") == 0)
+            return !token->reversed;
+
         for (int i = 0; i < 3; i++)
         {
-            if (token->value.param[i + 1] == '0')
-                continue;
             if (((file_perm[i] - '0') & (token->value.param[i + 1] - '0')) != 0)
                 return !token->reversed;
         }
