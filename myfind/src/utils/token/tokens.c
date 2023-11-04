@@ -102,7 +102,7 @@ struct token_model *get_token_model(const char *symbol)
         { "(", L_PARENT, 0, NULL, NULL },
         { ")", R_PARENT, 0, NULL, NULL },
 
-        { "-delete", ACTION_DELETE, 0, NULL, NULL },
+        { "-delete", ACTION_DELETE, 0, NULL, delete },
         { "-print", ACTION_PRINT, 0, NULL, print },
         { "-exec", ACTION_EXEC, -1, set_exec_value, exec },
         { "-execdir", ACTION_EXECDIR, -1, set_exec_value, execdir },
