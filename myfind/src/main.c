@@ -5,7 +5,7 @@ static void process_entry_point(struct node *ast, const char *path,
 {
     DIR *current_dir = opendir(path);
     if (current_dir == NULL)
-        exit_with(1, "no such file or directory: %s", path);
+        return;
 
     struct dirent *dir_info = readdir(current_dir);
     for (; dir_info; dir_info = readdir(current_dir))
