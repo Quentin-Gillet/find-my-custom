@@ -47,7 +47,7 @@ test_find testing/foo -name bar -a -name baz
 test_find testing/foo -name bar -name baz
 test_find ../tests ../src
 test_find testing/foo -exec pwd \; -exec echo -- {} -- \;
-test_find testing/foo/* -newer testing/foo/bar
+test_find testing/foo -execdir pwd \; -execdir echo -- {} -- \;
 test_find testing/foo/* -newer testing/foo/baz
 test_find ../. -name "*.c" -print -o -type d -print
 test_find ../. -name "*.c" -o -type d -print
@@ -62,6 +62,8 @@ test_find tests.sh -print
 test_find testing/perm -perm 777
 test_find testing/perm -perm -102
 test_find testing/perm -perm /004
+test_find testing/perm -perm -000
+test_find testing/perm -perm /000
 test_find testing/perm -perm /120
 test_find testing/perm -perm /004
 test_find testing/perm -perm -567
@@ -75,9 +77,6 @@ test_find testing/perm -user test
 test_find testing/perm -group staff
 test_find testing/perm -group 0
 test_find testing/perm -group test
-
-# TEST -d options
-# TODO FIX test_find testing/perm -d .
 
 # TEST -L options
 test_find -L testing/symlink -print
@@ -109,6 +108,7 @@ test_find . '!' -name "bar"
 test_find . \( -name bar -o -name baz \)
 test_find . \( -name bar \)
 test_find . \! \( -name bar -o -name baz \)
+test_find . \( \( -name bar -a -type d \) -o -name baz \)
 
 # TEST errors
 test_find mdr -print
@@ -129,6 +129,17 @@ test_find . src \! -name "foo*" -print \)
 test_find . mdr lol \! -name "foo*" -print
 test_find . tests lol \! -name "foo*" -print
 test_find Makefile -print
+test_find . \( \( -name bar -a -type -d \) -o -name baz \)
+test_find . testing -name "foo" -a -perm 999
+
+# TEST delete
+mkdir -p testing/delete
+touch testing/delete/foo
+mkdir -p testing/delete/bar
+touch testing/delete/baz
+#test_find testing/delete -name "foo" -delete
+#test_find testing/delete -name "bar" -a -type d -delete
+#test_find testing/delete -delete -delete
 
 percent_color=$GREEN
 if [ $failed -gt $pass ]; then

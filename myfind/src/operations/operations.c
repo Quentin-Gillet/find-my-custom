@@ -2,7 +2,8 @@
 
 bool print(struct token *token, struct file file)
 {
-    printf("%s\n", file.path);
+    if (file.print)
+        printf("%s\n", file.path);
     return token == NULL ? true : !token->reversed;
 }
 
@@ -15,6 +16,8 @@ bool name(struct token *token, struct file file)
 
 bool delete(struct token *token, struct file file)
 {
+    if (!file.print)
+        return !token->reversed;
     if (remove(file.path) == 0)
         return !token->reversed;
     exit_with(1, "cannot delete file: %s", file.path);
@@ -24,7 +27,7 @@ bool delete(struct token *token, struct file file)
 bool type(struct token *token, struct file file)
 {
     if (strlen(token->value.param) != 1)
-        return token->reversed;
+        exit_with(1, "invalid argument for -type: %s", token->value.param);
 
     static struct type_stat mode_ref[] = { { "b", S_IFBLK }, { "d", S_IFDIR },
                                            { "c", S_IFCHR }, { "f", S_IFREG },

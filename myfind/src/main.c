@@ -20,8 +20,8 @@ static void process_entry_point(struct node *ast, const char *path,
             snprintf(filepath, size, "%s%s", path, dir_info->d_name);
         else
             snprintf(filepath, size, "%s/%s", path, dir_info->d_name);
-        struct file file = { dir_info->d_name, filepath, path,
-                             options->symlink };
+        struct file file = { dir_info->d_name, filepath, path, options->symlink,
+                             options->print };
 
         struct stat statbuf;
         if (lstat(filepath, &statbuf) == -1)
@@ -44,33 +44,46 @@ static void process_entry_point(struct node *ast, const char *path,
     closedir(current_dir);
 }
 
+static void call_process_entry_point(struct node *ast, struct options *options,
+                                     struct stat statbuf, struct file file)
+{
+    file.print = options->print;
+
+    if (!options->post_order)
+        evaluate(ast, file);
+
+    if (statbuf.st_mode & S_IFDIR
+        || ((statbuf.st_mode & S_IFLNK) && options->symlink == SYMLINK_FOLLOW))
+        process_entry_point(ast, file.path, options);
+
+    if (options->post_order)
+        evaluate(ast, file);
+}
+
 static int process_entries_points(struct node *ast,
                                   struct entries_point *entries_point,
                                   struct options *options)
 {
     for (int i = 0; i < entries_point->size; i++)
     {
+        options->print = false;
         char *parent =
             calloc(strlen(entries_point->entries_point[i]) + 1, sizeof(char));
         strcpy(parent, entries_point->entries_point[i]);
         struct file file = { basename(entries_point->entries_point[i]),
                              entries_point->entries_point[i], dirname(parent),
-                             options->symlink };
+                             options->symlink, options->print };
 
         struct stat statbuf;
         if (lstat(file.path, &statbuf) == -1)
             exit_with(1, "no such file or directory: %s", file.path);
 
-        if (!options->post_order)
-            evaluate(ast, file);
+        // check syntax and args
+        call_process_entry_point(ast, options, statbuf, file);
 
-        if (statbuf.st_mode & S_IFDIR
-            || ((statbuf.st_mode & S_IFLNK)
-                && options->symlink == SYMLINK_FOLLOW))
-            process_entry_point(ast, file.path, options);
-
-        if (options->post_order)
-            evaluate(ast, file);
+        // process entry
+        options->print = true;
+        call_process_entry_point(ast, options, statbuf, file);
 
         free(parent);
     }
@@ -129,6 +142,7 @@ int main(int argc, char **argv)
     struct tokens *tokens = parse_tokens(args);
     struct node *ast = build_ast(tokens);
 
+    // process files
     process_entries_points(ast, args->entries_points, args->options);
 
     free_args(args);

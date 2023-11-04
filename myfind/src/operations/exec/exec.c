@@ -51,7 +51,9 @@ bool exec(struct token *token, struct file file)
             strcpy(command_args[i], token->value.args[i]);
         }
 
-    bool exit_code = exec_command(command_args[0], command_args, NULL);
+    bool exit_code = 0;
+    if (file.print)
+        exit_code = exec_command(command_args[0], command_args, NULL);
 
     for (int i = 0; command_args[i]; i++)
         free(command_args[i]);
@@ -85,7 +87,9 @@ bool execdir(struct token *token, struct file file)
             strcpy(command_args[i], token->value.args[i]);
         }
 
-    bool exit_code = exec_command(command_args[0], command_args, file.parent);
+    bool exit_code = 0;
+    if (file.print)
+        exit_code = exec_command(command_args[0], command_args, file.parent);
 
     for (int i = 0; command_args[i]; i++)
         free(command_args[i]);

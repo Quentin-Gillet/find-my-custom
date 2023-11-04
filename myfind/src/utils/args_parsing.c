@@ -50,6 +50,7 @@ struct options *get_options(int *i, int argc, char **argv)
         exit_with(1, "main.c:43 calloc allocation failed");
 
     options->symlink = SYMLINK_NOFOLLOW;
+    options->print = false;
 
     for (; *i < argc; *i = *i + 1)
     {

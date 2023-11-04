@@ -155,7 +155,17 @@ static bool revert_bool(bool original, bool reversed)
 bool evaluate(struct node *tree, struct file file)
 {
     struct token *token = tree->token;
-    if (token->type == OPERATOR_OR)
+
+    if (!file.print)
+    {
+        if (is_operator(token))
+            return revert_bool(evaluate(tree->left, file)
+                                   || evaluate(tree->right, file),
+                               token->reversed);
+        else
+            return token->func(token, file);
+    }
+    else if (token->type == OPERATOR_OR)
         return revert_bool(evaluate(tree->left, file)
                                || evaluate(tree->right, file),
                            token->reversed);

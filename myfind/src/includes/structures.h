@@ -16,6 +16,7 @@ struct file
     char *path;
     const char *parent;
     enum symlink symlink;
+    bool print;
 };
 
 enum token_type
@@ -59,6 +60,7 @@ struct options
 {
     enum symlink symlink;
     bool post_order;
+    bool print;
 };
 
 struct args_input
