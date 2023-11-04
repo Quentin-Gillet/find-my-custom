@@ -18,13 +18,6 @@ struct token_model
     bool (*func)(struct token *token, struct file file);
 };
 
-struct tokens
-{
-    struct token **data;
-    unsigned length;
-    unsigned capacity;
-};
-
 bool is_operator(struct token *token);
 bool is_action(struct token *token);
 bool is_parenthesis(struct token *token);

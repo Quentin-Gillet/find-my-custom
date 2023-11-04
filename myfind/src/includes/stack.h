@@ -14,9 +14,7 @@ struct stack
 // STACK TOKEN
 struct stack *stack_push(struct stack *s, struct node *node);
 struct stack *stack_pop(struct stack *s);
-struct stack *stack_pop_tail(struct stack *s);
 struct node *stack_peek(struct stack *s);
-struct node *stack_peek_tail(struct stack *s);
 struct stack *stack_init(void);
 int is_empty(struct stack *s);
 

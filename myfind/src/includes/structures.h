@@ -43,6 +43,20 @@ enum token_type
     TEST_GROUP,
 };
 
+struct node
+{
+    struct token *token;
+    struct node *left;
+    struct node *right;
+};
+
+struct tokens
+{
+    struct token **data;
+    unsigned length;
+    unsigned capacity;
+};
+
 struct entries_point
 {
     char **entries_point;
@@ -56,6 +70,13 @@ struct options
     enum symlink symlink;
     bool post_order;
     bool print;
+};
+
+struct to_free
+{
+    struct node *ast;
+    struct tokens *tokens;
+    struct args_input *args;
 };
 
 struct args_input

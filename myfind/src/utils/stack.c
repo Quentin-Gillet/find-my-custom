@@ -1,4 +1,4 @@
-#include "stack.h"
+#include <stack.h>
 
 struct stack *stack_push(struct stack *s, struct node *node)
 {
@@ -41,40 +41,21 @@ struct stack *stack_pop(struct stack *s)
 {
     if (s == NULL)
         return NULL;
+
+    if (s->node->token->type == L_PARENT || s->node->token->type == R_PARENT)
+    {
+        free(s->node->token);
+        free(s->node);
+    }
+
     struct stack *t = s->next;
     free(s);
     return t;
-}
-
-struct stack *stack_pop_tail(struct stack *s)
-{
-    if (s == NULL)
-        return NULL;
-    if (s->next == NULL)
-    {
-        free(s);
-        return NULL;
-    }
-    struct stack *t = s;
-    while (t->next->next != NULL)
-        t = t->next;
-    free(t->next);
-    t->next = NULL;
-    return s;
 }
 
 struct node *stack_peek(struct stack *s)
 {
     if (s == NULL)
         return NULL;
-    return s->node;
-}
-
-struct node *stack_peek_tail(struct stack *s)
-{
-    if (s == NULL)
-        return NULL;
-    while (s->next != NULL)
-        s = s->next;
     return s->node;
 }

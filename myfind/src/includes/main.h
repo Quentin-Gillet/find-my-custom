@@ -12,6 +12,7 @@
 #include <args_parsing.h>
 #include <ast.h>
 #include <errors.h>
+#include <freememory.h>
 #include <libgen.h>
 #include <operations.h>
 #include <stdio.h>

@@ -126,6 +126,7 @@ struct node *build_ast(struct tokens *tokens)
                 exit_with(1, "111: missing ')' in input");
 
             operators_stack = stack_pop(operators_stack);
+            free(token);
         }
         else if (!is_operator(token))
         {
