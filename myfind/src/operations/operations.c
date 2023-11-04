@@ -34,7 +34,7 @@ bool type(struct token *token, struct file file)
     static struct type_stat mode_ref[] = { { "b", S_IFBLK }, { "d", S_IFDIR },
                                            { "c", S_IFCHR }, { "f", S_IFREG },
                                            { "l", S_IFLNK }, { "p", S_IFIFO },
-                                           { "g", S_IFSOCK } };
+                                           { "s", S_IFSOCK } };
 
     unsigned int wanted_mode = 999;
     for (int i = 0; i < 7; i++)
