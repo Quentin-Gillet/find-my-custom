@@ -64,7 +64,11 @@ bool newer(struct token *token, struct file file)
     if (result_code != 0)
         exit_with(1, "no such file or directory: %s", token->value.param);
 
-    int result = stat_info.st_mtim.tv_nsec > stat_info_param.st_mtim.tv_nsec;
+    int result;
+    if (stat_info.st_mtim.tv_sec == stat_info_param.st_mtim.tv_sec)
+        result = stat_info.st_mtim.tv_nsec > stat_info_param.st_mtim.tv_nsec;
+    else
+        result = stat_info.st_mtim.tv_sec > stat_info_param.st_mtim.tv_sec;
     return token->reversed == !result;
 }
 
