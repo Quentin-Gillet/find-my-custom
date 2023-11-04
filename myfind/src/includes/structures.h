@@ -43,11 +43,6 @@ enum token_type
     TEST_GROUP,
 };
 
-struct exit_info
-{
-    int exit_code;
-} exit_info;
-
 struct entries_point
 {
     char **entries_point;

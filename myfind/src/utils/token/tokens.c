@@ -8,6 +8,7 @@ static bool is_terminator(const char *str)
 
 static void set_exec_value(struct token *token, struct args_input *args)
 {
+    args->expression_index++;
     unsigned start_index = args->expression_index;
     while (args->expression[args->expression_index] != NULL
            && !is_terminator(args->expression[args->expression_index]))
@@ -45,10 +46,17 @@ static void add_token(struct token *token, struct tokens *tokens)
 
 static void set_simple_value(struct token *token, struct args_input *args)
 {
+    args->expression_index++;
     if (args->expression[args->expression_index] == NULL)
         exit_with(1, "token.c:45 missing argument for %s",
                   args->expression[args->expression_index - 1]);
     token->value.param = args->expression[args->expression_index];
+}
+
+static void set_delete(__attribute__((unused)) struct token *token,
+                       struct args_input *args)
+{
+    args->options->post_order = true;
 }
 
 struct token *copy_token(struct token *token)
@@ -102,7 +110,7 @@ struct token_model *get_token_model(const char *symbol)
         { "(", L_PARENT, 0, NULL, NULL },
         { ")", R_PARENT, 0, NULL, NULL },
 
-        { "-delete", ACTION_DELETE, 0, NULL, delete },
+        { "-delete", ACTION_DELETE, 0, set_delete, delete_action },
         { "-print", ACTION_PRINT, 0, NULL, print },
         { "-exec", ACTION_EXEC, -1, set_exec_value, exec },
         { "-execdir", ACTION_EXECDIR, -1, set_exec_value, execdir },
@@ -136,10 +144,7 @@ static struct token *get_token_from_symbol(const char *symbol,
     token->pre = model->precedence;
 
     if (model->set_value != NULL)
-    {
-        args->expression_index++;
         model->set_value(token, args);
-    }
 
     token->reversed = false;
     token->func = model->func;

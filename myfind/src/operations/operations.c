@@ -14,13 +14,15 @@ bool name(struct token *token, struct file file)
     return token->reversed;
 }
 
-bool delete(struct token *token, struct file file)
+bool delete_action(struct token *token, struct file file)
 {
     if (!file.print)
-        return !token->reversed;
+        return true;
+
     if (remove(file.path) == 0)
         return !token->reversed;
-    exit_with(1, "cannot delete file: %s", file.path);
+    else
+        exit_with(1, "cannot delete file: %s", file.path);
     return false;
 }
 

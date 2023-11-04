@@ -36,7 +36,7 @@ struct type_stat
 bool print(struct token *token, struct file file);
 bool exec(struct token *token, struct file file);
 bool execdir(struct token *token, struct file file);
-bool delete(struct token *token, struct file file);
+bool delete_action(struct token *token, struct file file);
 
 // TOKENS TEST OPERATION
 bool name(struct token *token, struct file file);
