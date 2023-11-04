@@ -44,21 +44,6 @@ static void add_token(struct token *token, struct tokens *tokens)
     if (token != NULL)
         tokens->length++;
 }
-static bool valid_type_symbol(char *symbol)
-{
-    static struct type_stat mode_ref[] = { { "b", S_IFBLK }, { "d", S_IFDIR },
-                                           { "c", S_IFCHR }, { "f", S_IFREG },
-                                           { "l", S_IFLNK }, { "p", S_IFIFO },
-                                           { "s", S_IFSOCK } };
-
-    unsigned int wanted_mode = 999;
-    for (int i = 0; i < 7; i++)
-        if (strcmp(symbol, mode_ref[i].symbol) == 0)
-            wanted_mode = mode_ref[i].mode;
-    if (wanted_mode == 999)
-        return false;
-    return true;
-}
 
 static void set_simple_value(struct token *token, struct args_input *args,
                              __attribute__((unused)) struct tokens *tokens)
@@ -67,10 +52,6 @@ static void set_simple_value(struct token *token, struct args_input *args,
     if (args->expression[args->expression_index] == NULL)
         exit_with(1, "token.c:45 missing argument for %s",
                   args->expression[args->expression_index - 1]);
-    if (token->type == TEST_TYPE
-        && !valid_type_symbol(args->expression[args->expression_index]))
-        exit_with(1, "invalid argument for -type: %s",
-                  args->expression[args->expression_index]);
     token->value.param = args->expression[args->expression_index];
 }
 

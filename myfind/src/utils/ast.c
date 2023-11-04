@@ -160,9 +160,11 @@ bool evaluate(struct node *tree, struct file file)
     if (!file.print)
     {
         if (is_operator(token))
-            return revert_bool(evaluate(tree->left, file)
-                                   || evaluate(tree->right, file),
-                               token->reversed);
+        {
+            evaluate(tree->left, file);
+            evaluate(tree->right, file);
+            return true;
+        }
         else
             return token->func(token, file);
     }
