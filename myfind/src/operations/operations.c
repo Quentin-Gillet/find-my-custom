@@ -1,4 +1,9 @@
 #define _DEFAULT_SOURCE 1
+#if defined(__APPLE__)
+#    define st_atim st_atimespec
+#    define st_ctim st_ctimespec
+#    define st_mtim st_mtimespec
+#endif
 
 #include <operations.h>
 
@@ -32,14 +37,12 @@ bool type(struct token *token, struct file file)
     if (wanted_mode == 999)
         exit_with(1, "invalid argument for -type: %s", token->value.param);
 
-    struct stat *stat_info = calloc(1, sizeof(struct stat));
-    if (stat_info == NULL)
-        return token->reversed;
+    struct stat stat_info;
 
     int result_code = file.symlink == SYMLINK_FOLLOW
-        ? stat(file.path, stat_info)
-        : lstat(file.path, stat_info);
-    if (result_code == 0 && (stat_info->st_mode & S_IFMT) == wanted_mode)
+        ? stat(file.path, &stat_info)
+        : lstat(file.path, &stat_info);
+    if (result_code == 0 && (stat_info.st_mode & S_IFMT) == wanted_mode)
         return !token->reversed;
 
     return token->reversed;
@@ -47,39 +50,28 @@ bool type(struct token *token, struct file file)
 
 bool newer(struct token *token, struct file file)
 {
-    struct stat *stat_info = calloc(1, sizeof(struct stat));
-    if (stat_info == NULL)
-        return token->reversed;
-
-    int result_code = stat(file.path, stat_info);
+    struct stat stat_info;
+    int result_code = stat(file.path, &stat_info);
     if (result_code != 0)
         return token->reversed;
 
-    struct stat *stat_info_param = calloc(1, sizeof(struct stat));
-    if (stat_info_param == NULL)
-        return token->reversed;
-
-    result_code = stat(token->value.param, stat_info_param);
+    struct stat stat_info_param;
+    result_code = stat(token->value.param, &stat_info_param);
     if (result_code != 0)
         return token->reversed;
 
-    int result = stat_info->st_mtime > stat_info_param->st_mtime;
+    int result = stat_info.st_mtim.tv_nsec > stat_info_param.st_mtim.tv_nsec;
     return token->reversed == !result;
 }
 
 bool perm(struct token *token, struct file file)
 {
-    // get permission for file
-    struct stat *stat_info = calloc(1, sizeof(struct stat));
-    if (stat_info == NULL)
-        return token->reversed;
-
-    // get stat of file
-    if (stat(file.path, stat_info) != 0)
+    struct stat stat_info;
+    if (stat(file.path, &stat_info) != 0)
         return token->reversed;
 
     char *file_perm = calloc(10, sizeof(char));
-    int mode = stat_info->st_mode & (S_IRWXU | S_IRWXG | S_IRWXO);
+    int mode = stat_info.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO);
     snprintf(file_perm, 10, "%03o", mode);
 
     if (token->value.param[0] == '-')
@@ -111,6 +103,7 @@ bool perm(struct token *token, struct file file)
              == strtol(file_perm, NULL, 10))
         return !token->reversed;
 
+    free(file_perm);
     return token->reversed;
 }
 
@@ -124,18 +117,15 @@ static bool is_number(const char *str)
 
 bool user(struct token *token, struct file file)
 {
-    struct stat *stat_info = calloc(1, sizeof(struct stat));
-    if (stat_info == NULL)
-        return token->reversed;
-
-    if (stat(file.path, stat_info) != 0)
+    struct stat stat_info;
+    if (stat(file.path, &stat_info) != 0)
         return token->reversed;
 
     if ((is_number(token->value.param)
-         && strtol(token->value.param, NULL, 10) == stat_info->st_gid))
+         && strtol(token->value.param, NULL, 10) == stat_info.st_gid))
         return !token->reversed;
 
-    struct passwd *passwd_info = getpwuid(stat_info->st_uid);
+    struct passwd *passwd_info = getpwuid(stat_info.st_uid);
     if (passwd_info == NULL)
         exit_with(1, "no such user: %s", token->value.param);
 
@@ -153,18 +143,16 @@ bool user(struct token *token, struct file file)
 
 bool group(struct token *token, struct file file)
 {
-    struct stat *stat_info = calloc(1, sizeof(struct stat));
-    if (stat_info == NULL)
-        return token->reversed;
+    struct stat stat_info;
 
-    if (stat(file.path, stat_info) != 0)
+    if (stat(file.path, &stat_info) != 0)
         return token->reversed;
 
     if ((is_number(token->value.param)
-         && strtol(token->value.param, NULL, 10) == stat_info->st_gid))
+         && strtol(token->value.param, NULL, 10) == stat_info.st_gid))
         return !token->reversed;
 
-    struct group *group_info = getgrgid(stat_info->st_gid);
+    struct group *group_info = getgrgid(stat_info.st_gid);
     if (group_info == NULL)
         exit_with(1, "no such group: %s", token->value.param);
 

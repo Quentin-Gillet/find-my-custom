@@ -7,7 +7,7 @@ static void process_entry_point(struct node *ast, const char *path,
 {
     DIR *current_dir = opendir(path);
     if (current_dir == NULL)
-        return;
+        exit_with(1, "no such file or directory: %s", path);
 
     struct dirent *dir_info = readdir(current_dir);
     for (; dir_info; dir_info = readdir(current_dir))
@@ -38,6 +38,8 @@ static void process_entry_point(struct node *ast, const char *path,
 
         if (options->post_order)
             evaluate(ast, file);
+
+        free(filepath);
     }
 
     closedir(current_dir);
@@ -71,6 +73,52 @@ static int process_entries_points(struct node *ast,
     return 0;
 }
 
+static void free_args(struct args_input *args)
+{
+    if (args == NULL)
+        return;
+    free(args->expression);
+    free(args->options);
+    free(args->entries_points->entries_point);
+    free(args->entries_points);
+    free(args);
+}
+
+static void free_token(struct token *token, bool free_args)
+{
+    if (token == NULL)
+        return;
+    if (token->type == ACTION_EXEC)
+    {
+        for (int i = 0; token->value.args[i] != NULL; i++)
+            free(token->value.args[i]);
+        free(token->value.args);
+    }
+    else if (token->value.param != NULL && free_args)
+        free(token->value.param);
+    free(token);
+}
+
+static void free_tokens(struct tokens *tokens)
+{
+    if (tokens == NULL)
+        return;
+    for (unsigned i = 0; i < tokens->length; i++)
+        free_token(tokens->data[i], false);
+    free(tokens->data);
+    free(tokens);
+}
+
+static void free_ast(struct node *ast)
+{
+    if (ast == NULL)
+        return;
+    free_ast(ast->left);
+    free_ast(ast->right);
+    free_token(ast->token, true);
+    free(ast);
+}
+
 int main(int argc, char **argv)
 {
     struct args_input *args = process_args(argc, argv);
@@ -79,5 +127,8 @@ int main(int argc, char **argv)
 
     process_entries_points(ast, args->entries_points, args->options);
 
-    return get_exit_code();
+    free_args(args);
+    free_tokens(tokens);
+    free_ast(ast);
+    return 0;
 }

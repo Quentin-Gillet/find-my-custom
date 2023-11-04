@@ -29,6 +29,7 @@ bool is_operator(struct token *token);
 bool is_action(struct token *token);
 bool is_parenthesis(struct token *token);
 
+struct token *copy_token(struct token *token);
 struct tokens *parse_tokens(struct args_input *args);
 struct token_model *get_token_model(const char *symbol);
 

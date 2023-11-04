@@ -2,10 +2,9 @@
 
 static bool exec_command(char *command, char **args)
 {
-    pid_t child_pid;
     int status;
 
-    child_pid = fork();
+    pid_t child_pid = fork();
 
     if (child_pid == -1)
         return 1;
@@ -13,7 +12,6 @@ static bool exec_command(char *command, char **args)
     if (child_pid == 0)
     {
         execvp(command, args);
-        perror("execvp");
         exit(1);
     }
     else
@@ -31,7 +29,6 @@ bool exec(struct token *token, struct file file)
     if (token->value.args == NULL)
         return false;
 
-    // get size of args
     int size = 0;
     for (int i = 0; token->value.args[i]; i++)
         size++;
@@ -53,5 +50,10 @@ bool exec(struct token *token, struct file file)
         }
 
     bool exit_code = exec_command(command_args[0], command_args);
+
+    for (int i = 0; command_args[i]; i++)
+        free(command_args[i]);
+    free(command_args);
+
     return exit_code;
 }

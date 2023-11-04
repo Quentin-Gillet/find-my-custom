@@ -18,7 +18,11 @@ static void set_exec_value(struct token *token, struct args_input *args)
 
     int i = 0;
     for (; start_index < args->expression_index; i++, start_index++)
-        data_cpy[i] = args->expression[start_index];
+    {
+        data_cpy[i] =
+            calloc(strlen(args->expression[start_index]) + 1, sizeof(char));
+        strcpy(data_cpy[i], args->expression[start_index]);
+    }
 
     token->value.args = data_cpy;
 }
@@ -45,6 +49,45 @@ static void set_simple_value(struct token *token, struct args_input *args)
         exit_with(1, "token.c:45 missing argument for %s",
                   args->expression[args->expression_index - 1]);
     token->value.param = args->expression[args->expression_index];
+}
+
+struct token *copy_token(struct token *token)
+{
+    struct token *new_token = calloc(1, sizeof(struct token));
+    if (new_token == NULL)
+        exit_with(1, "token.c:53 calloc failed");
+
+    new_token->type = token->type;
+    new_token->pre = token->pre;
+    new_token->reversed = token->reversed;
+    new_token->func = token->func;
+
+    if (token->type == ACTION_EXEC)
+    {
+        int len = 0;
+        for (; token->value.args[len]; len++)
+            ;
+        new_token->value.args = calloc(len + 1, sizeof(char *));
+        if (new_token->value.args == NULL)
+            exit_with(1, "token.c:67 calloc failed");
+        for (int i = 0; token->value.args[i]; i++)
+        {
+            new_token->value.args[i] =
+                calloc(strlen(token->value.args[i]) + 1, sizeof(char));
+            if (new_token->value.args[i] == NULL)
+                exit_with(1, "token.c:73 calloc failed");
+            strcpy(new_token->value.args[i], token->value.args[i]);
+        }
+    }
+    else if (token->value.param != NULL)
+    {
+        new_token->value.param =
+            calloc(strlen(token->value.param) + 1, sizeof(char));
+        if (new_token->value.param == NULL)
+            exit_with(1, "token.c:92 calloc failed");
+        strcpy(new_token->value.param, token->value.param);
+    }
+    return new_token;
 }
 
 struct token_model *get_token_model(const char *symbol)
@@ -89,7 +132,7 @@ static struct token *get_token_from_symbol(const char *symbol,
         return NULL;
 
     token->type = model->type;
-    token->precedence = model->precedence;
+    token->pre = model->precedence;
 
     if (model->set_value != NULL)
     {

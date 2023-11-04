@@ -23,7 +23,7 @@ static struct token *create_and_token(void)
 {
     struct token *token = calloc(1, sizeof(struct token));
     token->type = OPERATOR_AND;
-    token->precedence = 4;
+    token->pre = 4;
     return token;
 }
 
@@ -32,7 +32,7 @@ static struct token *create_print_token(void)
     struct token *token = calloc(1, sizeof(struct token));
     token->type = ACTION_PRINT;
     token->func = print;
-    token->precedence = 1;
+    token->pre = 1;
     return token;
 }
 
@@ -74,6 +74,7 @@ static struct node *get_top_node(struct tokens *tokens,
 
         return and_node;
     }
+
     return stack_peek(*operands_stack);
 }
 
@@ -84,14 +85,20 @@ struct node *check_top_operator(struct stack *operators_stack)
     return stack_peek(operators_stack);
 }
 
-void process_end_of_ast(struct stack **operators_stack,
-                        struct stack **operands_stack)
+struct node *process_end_of_ast(struct stack **operators_stack,
+                                struct stack **operands_stack,
+                                struct tokens *tokens)
 {
     while (stack_peek(*operators_stack) != NULL)
         if (stack_peek(*operators_stack)->token->type == L_PARENT)
             exit_with(1, "too many ')' in input");
         else
             process_operator(operators_stack, operands_stack);
+
+    struct node *top_node = get_top_node(tokens, operands_stack);
+    free(*operators_stack);
+    free(*operands_stack);
+    return top_node;
 }
 
 struct node *build_ast(struct tokens *tokens)
@@ -101,7 +108,7 @@ struct node *build_ast(struct tokens *tokens)
 
     for (unsigned i = 0; tokens != NULL && i < tokens->length; i++)
     {
-        struct token *token = tokens->data[i];
+        struct token *token = copy_token(tokens->data[i]);
 
         if (token->type == L_PARENT)
             operators_stack = stack_push(operators_stack, create_node(token));
@@ -131,15 +138,13 @@ struct node *build_ast(struct tokens *tokens)
         else
         {
             while (stack_peek(operators_stack) != NULL
-                   && (stack_peek(operators_stack)->token->precedence
-                       > token->precedence))
+                   && (stack_peek(operators_stack)->token->pre > token->pre))
                 process_operator(&operators_stack, &operands_stack);
             operators_stack = stack_push(operators_stack, create_node(token));
         }
     }
 
-    process_end_of_ast(&operators_stack, &operands_stack);
-    return get_top_node(tokens, &operands_stack);
+    return process_end_of_ast(&operators_stack, &operands_stack, tokens);
 }
 
 static bool revert_bool(bool original, bool reversed)

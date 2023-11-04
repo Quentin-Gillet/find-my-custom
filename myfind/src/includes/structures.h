@@ -82,7 +82,7 @@ struct token
 
     // Characteristics
     bool reversed;
-    int precedence;
+    int pre;
 };
 
 #endif // MYFIND_STRUCTURES_H
