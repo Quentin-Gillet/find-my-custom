@@ -1,6 +1,10 @@
 #ifndef MYFIND_TOKENS_H
 #define MYFIND_TOKENS_H
 
+#ifndef _DEFAULT_SOURCE
+#    define _DEFAULT_SOURCE
+#endif /* ! _DEFAULT_SOURCE */
+
 #include <errors.h>
 #include <operations.h>
 #include <stdbool.h>
