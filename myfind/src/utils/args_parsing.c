@@ -1,4 +1,5 @@
 #include <args_parsing.h>
+#include <malloc/_malloc.h>
 
 static void add_entry(struct entries_point *entries_point, char *entry)
 {
@@ -63,7 +64,10 @@ struct options *get_options(int *i, int argc, char **argv)
         else if (strcmp(argv[*i], "-P") == 0)
             options->symlink = SYMLINK_NOFOLLOW;
         else if (argv[*i][0] == '-')
+        {
+            free(options);
             return NULL;
+        }
         else
             return options;
     }

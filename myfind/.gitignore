@@ -1,0 +1,8 @@
+*.o
+.idea
+myfind
+check
+.DS_Store
+*.d
+compile_commands.json
+Makefile-prod

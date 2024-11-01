@@ -151,11 +151,11 @@ static struct token *get_token_from_symbol(const char *symbol,
                                            struct tokens *tokens)
 {
     struct token_model *model = get_token_model(symbol);
-    struct token *token = calloc(1, sizeof(struct token));
 
-    if (token == NULL || model == NULL)
+    if (model == NULL)
         return NULL;
 
+    struct token *token = calloc(1, sizeof(struct token));
     token->type = model->type;
     token->pre = model->precedence;
 

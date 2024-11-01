@@ -30,8 +30,6 @@ test_find(){
 
 # TEST FIND SUCCESS
 
-cd tests
-
 test_find testing -name "bar" -print
 test_find testing -name "bar"
 test_find testing/foo -print

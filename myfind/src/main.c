@@ -1,4 +1,5 @@
 #include <main.h>
+#include <malloc/_malloc.h>
 
 static void process_entry_point(struct node *ast, const char *path,
                                 struct options *options)
